@@ -1,18 +1,7 @@
-# GymTrack — publicación gratuita en GitHub Pages
+# GymTrack — versión actualizada
 
-Sube estos 4 archivos directamente a la raíz del repositorio:
-- index.html
-- manifest.webmanifest
-- sw.js
-- README.md
+Añade tipos de serie con repeticiones objetivo independientes. Ejemplo: Press banca → 1×4 + 2×8.
 
-No necesitas crear ninguna carpeta icons.
+Para actualizar tu GitHub Pages, sustituye `index.html` y `sw.js` por los archivos de este paquete. No necesitas cambiar la configuración de Pages.
 
-Pasos:
-1. GitHub → New repository → nombre `gymtrack` → Public.
-2. Add file → Upload files.
-3. Arrastra esos cuatro archivos.
-4. Settings → Pages.
-5. Build and deployment → Deploy from a branch.
-6. Branch: `main` y carpeta `/ (root)` → Save.
-7. Abre la URL que GitHub genere.
+Los datos se mantienen en el mismo almacenamiento local (`gymtrack_v1`).

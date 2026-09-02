@@ -6,6 +6,5 @@
   "display":"standalone",
   "background_color":"#0b1020",
   "theme_color":"#111827",
-  "description":"Rutinas, series, PRs y 1RM estimado.",
-  "icons":[]
+  "description":"Rutinas, series, PRs, calendario y 1RM estimado."
 }
