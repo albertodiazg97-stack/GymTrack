@@ -189,23 +189,57 @@ function openRoutineModal(id=null){
   window.__modalExercises=JSON.parse(JSON.stringify(exercises));
   renderModalExercises();document.getElementById("modal").classList.add("show");
 }
-function addModalExercise(){window.__modalExercises.push({name:"",sets:3,reps:8});renderModalExercises()}
+function normalizeExercisePlan(e){
+  if(Array.isArray(e?.repScheme)&&e.repScheme.length){
+    const repScheme=e.repScheme.map(x=>({sets:Math.max(1,Number(x.sets)||1),reps:Math.max(1,Number(x.reps)||1)}));
+    return {name:e.name||"",repScheme,sets:repScheme.reduce((a,x)=>a+x.sets,0),reps:repScheme[0]?.reps||8};
+  }
+  const sets=Math.max(1,Number(e?.sets)||3), reps=Math.max(1,Number(e?.reps)||8);
+  return {name:e?.name||"",repScheme:[{sets,reps}],sets,reps};
+}
+function addModalExercise(){window.__modalExercises.push({name:"",repScheme:[{sets:3,reps:8}]});renderModalExercises()}
+function addRepBlock(i){
+  const e=normalizeExercisePlan(window.__modalExercises[i]);
+  e.repScheme.push({sets:1,reps:8});
+  window.__modalExercises[i]=e; renderModalExercises();
+}
+function removeRepBlock(i,bi){
+  const e=normalizeExercisePlan(window.__modalExercises[i]);
+  if(e.repScheme.length<=1){showToast("Un ejercicio debe tener al menos un tipo de serie");return}
+  e.repScheme.splice(bi,1); window.__modalExercises[i]=e; renderModalExercises();
+}
 function renderModalExercises(){
  const c=document.getElementById("mExerciseList"); if(!c)return;
  if(!window.__modalExercises.length)c.innerHTML='<div class="empty">Añade tu primer ejercicio.</div>';
- else c.innerHTML=window.__modalExercises.map((e,i)=>`
+ else c.innerHTML=window.__modalExercises.map((raw,i)=>{
+   const e=normalizeExercisePlan(raw); window.__modalExercises[i]=e;
+   return `
    <div class="item">
      <div style="flex:1"><div class="formgrid">
        <div class="wide"><label class="small muted">Ejercicio</label><input value="${esc(e.name)}" oninput="window.__modalExercises[${i}].name=this.value"></div>
-       <div><label class="small muted">Series</label><input type="number" min="1" value="${e.sets||3}" oninput="window.__modalExercises[${i}].sets=Number(this.value)"></div>
-       <div><label class="small muted">Reps objetivo</label><input value="${esc(e.reps||8)}" oninput="window.__modalExercises[${i}].reps=this.value"></div>
-     </div></div>
+     </div>
+     <div class="small muted" style="margin-top:12px;margin-bottom:7px">Series y repeticiones objetivo</div>
+     <div class="grid" style="gap:8px">
+       ${e.repScheme.map((b,bi)=>`
+         <div class="setrow" style="grid-template-columns:minmax(80px,1fr) minmax(80px,1fr) auto">
+           <div><label class="small muted">Series</label><input type="number" min="1" value="${b.sets}" oninput="window.__modalExercises[${i}].repScheme[${bi}].sets=Math.max(1,Number(this.value)||1);window.__modalExercises[${i}].sets=window.__modalExercises[${i}].repScheme.reduce((a,x)=>a+(Number(x.sets)||1),0)"></div>
+           <div><label class="small muted">Repeticiones</label><input type="number" min="1" value="${b.reps}" oninput="window.__modalExercises[${i}].repScheme[${bi}].reps=Math.max(1,Number(this.value)||1)"></div>
+           <button class="dangerbtn" style="align-self:end" onclick="removeRepBlock(${i},${bi})">−</button>
+         </div>`).join("")}
+     </div>
+     <button class="secondary" style="margin-top:9px" onclick="addRepBlock(${i})">+ Añadir tipo de serie</button>
+     <div class="small muted" style="margin-top:7px">Ejemplo: 1×4 + 2×8</div>
+     </div>
      <button class="dangerbtn" onclick="window.__modalExercises.splice(${i},1);renderModalExercises()">✕</button>
-   </div>`).join("")
+   </div>`;
+ }).join("")
 }
 function saveRoutine(id){
  const name=document.getElementById("mRoutineName").value.trim(); if(!name){showToast("Pon un nombre a la rutina");return}
- const clean=window.__modalExercises.filter(e=>e.name.trim()).map(e=>({id:crypto.randomUUID(),name:e.name.trim(),sets:Number(e.sets)||3,reps:e.reps||8}));
+ const clean=window.__modalExercises.filter(e=>e.name.trim()).map(raw=>{
+   const e=normalizeExercisePlan(raw);
+   return {id:crypto.randomUUID(),name:e.name.trim(),repScheme:e.repScheme,sets:e.sets,reps:e.repScheme[0]?.reps||8};
+ });
  if(id){const r=db.routines.find(x=>x.id===id);r.name=name;r.desc=document.getElementById("mRoutineDesc").value.trim();r.tag=document.getElementById("mRoutineTag").value.trim();r.exercises=clean}
  else db.routines.push({id:crypto.randomUUID(),name,desc:document.getElementById("mRoutineDesc").value.trim(),tag:document.getElementById("mRoutineTag").value.trim(),exercises:clean});
  closeModal();saveDB();showToast("Rutina guardada");
@@ -218,7 +252,7 @@ function renderRoutines(){
    <div class="card">
     <div class="row"><div><div class="badge">${esc(r.tag||"Rutina")}</div><h3 style="margin:9px 0 3px">${esc(r.name)}</h3><div class="muted small">${esc(r.desc||"")}</div></div>
     <div class="row"><button class="secondary" onclick="openRoutineModal('${r.id}')">Editar</button><button class="dangerbtn" onclick="deleteRoutine('${r.id}')">Borrar</button></div></div>
-    <div class="chips" style="margin-top:12px">${r.exercises.map(e=>`<span class="chip">${esc(e.name)} · ${e.sets}×${esc(e.reps)}</span>`).join("")||'<span class="muted small">Sin ejercicios</span>'}</div>
+    <div class="chips" style="margin-top:12px">${r.exercises.map(raw=>{const e=normalizeExercisePlan(raw);const plan=e.repScheme.map(b=>`${b.sets}×${b.reps}`).join(" + ");return `<span class="chip">${esc(e.name)} · ${esc(plan)}</span>`}).join("")||'<span class="muted small">Sin ejercicios</span>'}</div>
    </div>`).join("");
 }
 function deleteRoutine(id){if(confirm("¿Borrar esta rutina?")){db.routines=db.routines.filter(r=>r.id!==id);saveDB();showToast("Rutina borrada")}}
@@ -230,7 +264,12 @@ function resetWorkout(){
 function loadRoutineToWorkout(){
  const id=document.getElementById("workoutRoutine").value;const r=db.routines.find(x=>x.id===id);
  if(!r){return}
- workoutState.routineId=id;workoutState.name=r.name;workoutState.exercises=r.exercises.map(e=>({name:e.name,sets:Array.from({length:Number(e.sets)||3},()=>({kg:"",reps:"",note:""}))}));
+ workoutState.routineId=id;workoutState.name=r.name;workoutState.exercises=r.exercises.map(raw=>{
+   const e=normalizeExercisePlan(raw);
+   const sets=[];
+   for(const block of e.repScheme) for(let n=0;n<block.sets;n++) sets.push({kg:"",reps:String(block.reps),targetReps:block.reps,note:""});
+   return {name:e.name,sets};
+ });
  document.getElementById("workoutName").value=r.name;renderWorkoutExercises();
 }
 function addExerciseToWorkout(){workoutState.exercises.push({name:"Nuevo ejercicio",sets:[{kg:"",reps:"",note:""}]});renderWorkoutExercises()}
@@ -252,12 +291,12 @@ function renderWorkoutExercises(){
      <div class="setrow">
        <div class="num">S${si+1}</div>
        <input type="number" step="0.5" min="0" placeholder="kg" value="${esc(s.kg)}" oninput="workoutState.exercises[${ei}].sets[${si}].kg=this.value">
-       <input type="number" step="1" min="0" placeholder="reps" value="${esc(s.reps)}" oninput="workoutState.exercises[${ei}].sets[${si}].reps=this.value">
+       <div style="display:flex;flex-direction:column;gap:3px"><input type="number" step="1" min="0" placeholder="reps" value="${esc(s.reps)}" oninput="workoutState.exercises[${ei}].sets[${si}].reps=this.value"><span class="small muted" style="font-size:10px">Objetivo: ${s.targetReps?esc(s.targetReps):"—"}</span></div>
        <button class="note-toggle" onclick="toggleNote(${ei},${si})">📝 ${s.note?"Ver nota":"Observación"}</button>
        <button class="dangerbtn" onclick="workoutState.exercises[${ei}].sets.splice(${si},1);renderWorkoutExercises()">−</button>
      </div>
      <div class="note-area ${s.note?"show":""}" id="note-${ei}-${si}"><textarea placeholder="Sensaciones, molestias, técnica..." oninput="workoutState.exercises[${ei}].sets[${si}].note=this.value">${esc(s.note)}</textarea></div>`).join("")}
-   <button class="secondary" style="margin-top:3px" onclick="workoutState.exercises[${ei}].sets.push({kg:'',reps:'',note:''});renderWorkoutExercises()">+ Serie</button>
+   <button class="secondary" style="margin-top:3px" onclick="workoutState.exercises[${ei}].sets.push({kg:'',reps:'',targetReps:'',note:''});renderWorkoutExercises()">+ Serie</button>
   </div>`).join("");
 }
 function toggleNote(ei,si){const el=document.getElementById(`note-${ei}-${si}`);el.classList.toggle("show")}
