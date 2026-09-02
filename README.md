@@ -1,7 +1,12 @@
-# GymTrack — versión actualizada
+# GymTrack v6
 
-Añade tipos de serie con repeticiones objetivo independientes. Ejemplo: Press banca → 1×4 + 2×8.
+Actualización de GymTrack con:
+- Calendario mensual.
+- Superseries en rutinas y entrenamientos.
+- Series descendentes en la planificación y durante el entrenamiento.
+- Corrección del botón `+ Añadir` al crear/editar una rutina.
+- Service worker v6 con estrategia network-first para evitar que el iPhone mantenga una versión antigua.
 
-Para actualizar tu GitHub Pages, sustituye `index.html` y `sw.js` por los archivos de este paquete. No necesitas cambiar la configuración de Pages.
+Importante: se mantiene la clave de almacenamiento local `gymtrack_v1`, por lo que los datos existentes del dispositivo se conservan.
 
-Los datos se mantienen en el mismo almacenamiento local (`gymtrack_v1`).
+Archivos: `index.html`, `manifest.webmanifest`, `sw.js`, `README.md`.

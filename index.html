@@ -162,7 +162,7 @@ textarea{min-height:74px;resize:vertical}
       <div class="card" id="rmHistory"></div>
     </section>
   </main>
-  <div class="footer">Los datos se guardan en este dispositivo mediante almacenamiento local. Exporta una copia periódicamente.</div>
+  <div class="footer">GymTrack v6 · Los datos se guardan en este dispositivo mediante almacenamiento local. Exporta una copia periódicamente.</div>
 </div>
 
 <div id="modal" class="modal" onclick="if(event.target===this)closeModal()">
@@ -208,6 +208,7 @@ function normalizeExercisePlan(e){
  const repScheme=Array.isArray(e?.repScheme)&&e.repScheme.length?e.repScheme.map(x=>({sets:Math.max(1,Number(x.sets)||1),reps:Math.max(1,Number(x.reps)||1),drop:x.drop?{kg:x.drop.kg??"",reps:Math.max(1,Number(x.drop.reps)||8)}:null})):[{sets:Math.max(1,Number(e?.sets)||3),reps:Math.max(1,Number(e?.reps)||8),drop:null}];
  return {name:e?.name||"",repScheme,supersetId:e?.supersetId||"",sets:repScheme.reduce((a,x)=>a+x.sets,0),reps:repScheme[0]?.reps||8};
 }
+function blankExercise(){return {id:crypto.randomUUID(),name:"",repScheme:[{sets:1,reps:8,drop:null}],sets:1,reps:8,supersetId:""}}
 function addModalExercise(){window.__modalExercises.push(blankExercise());renderModalExercises()}
 function addRepBlock(i){const e=normalizeExercisePlan(window.__modalExercises[i]);e.repScheme.push({sets:1,reps:8,drop:null});window.__modalExercises[i]=e;renderModalExercises()}
 function removeRepBlock(i,bi){const e=normalizeExercisePlan(window.__modalExercises[i]);if(e.repScheme.length<=1){showToast("Un ejercicio debe tener al menos un tipo de serie");return}e.repScheme.splice(bi,1);window.__modalExercises[i]=e;renderModalExercises()}
